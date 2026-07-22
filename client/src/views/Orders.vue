@@ -11,19 +11,19 @@
       <div class="stats-grid">
         <div class="stat-card success">
           <div class="stat-label">{{ t('status.delivered') }}</div>
-          <div class="stat-value">{{ getOrdersByStatus('Delivered').length }}</div>
+          <div class="stat-value">{{ orderCountsByStatus.Delivered }}</div>
         </div>
         <div class="stat-card info">
           <div class="stat-label">{{ t('status.shipped') }}</div>
-          <div class="stat-value">{{ getOrdersByStatus('Shipped').length }}</div>
+          <div class="stat-value">{{ orderCountsByStatus.Shipped }}</div>
         </div>
         <div class="stat-card warning">
           <div class="stat-label">{{ t('status.processing') }}</div>
-          <div class="stat-value">{{ getOrdersByStatus('Processing').length }}</div>
+          <div class="stat-value">{{ orderCountsByStatus.Processing }}</div>
         </div>
         <div class="stat-card danger">
           <div class="stat-label">{{ t('status.backordered') }}</div>
-          <div class="stat-value">{{ getOrdersByStatus('Backordered').length }}</div>
+          <div class="stat-value">{{ orderCountsByStatus.Backordered }}</div>
         </div>
       </div>
 
@@ -54,9 +54,9 @@
                       {{ t('orders.itemsCount', { count: order.items.length }) }}
                     </summary>
                     <div class="items-dropdown">
-                      <div v-for="(item, idx) in order.items" :key="idx" class="item-entry">
+                      <div v-for="(item, idx) in order.items" :key="`item-${order.id}-${idx}`" class="item-entry">
                         <span class="item-name">{{ translateProductName(item.name) }}</span>
-                        <span class="item-meta">{{ t('orders.quantity') }}: {{ item.quantity }} @ {{ currencySymbol }}{{ item.unit_price }}</span>
+                        <span class="item-meta">{{ t('orders.quantity') }}: {{ item.quantity }} @ {{ formatCurrency(item.unit_price, currentCurrency) }}</span>
                       </div>
                     </div>
                   </details>
@@ -73,7 +73,7 @@
                 </td>
                 <td class="col-date">{{ formatDate(order.order_date) }}</td>
                 <td class="col-date">{{ formatDate(order.expected_delivery) }}</td>
-                <td class="col-value"><strong>{{ currencySymbol }}{{ order.total_value.toLocaleString() }}</strong></td>
+                <td class="col-value"><strong>{{ formatCurrency(order.total_value, currentCurrency) }}</strong></td>
               </tr>
             </tbody>
           </table>
@@ -88,15 +88,13 @@ import { ref, onMounted, watch, computed } from 'vue'
 import { api } from '../api'
 import { useFilters } from '../composables/useFilters'
 import { useI18n } from '../composables/useI18n'
+import { formatCurrency } from '../utils/currency'
 
 export default {
   name: 'Orders',
   setup() {
     const { t, currentCurrency, translateProductName, translateCustomerName } = useI18n()
 
-    const currencySymbol = computed(() => {
-      return currentCurrency.value === 'JPY' ? '¥' : '$'
-    })
     const loading = ref(true)
     const error = ref(null)
     const orders = ref([])
@@ -134,9 +132,12 @@ export default {
       loadOrders()
     })
 
-    const getOrdersByStatus = (status) => {
-      return orders.value.filter(order => order.status === status)
-    }
+    const orderCountsByStatus = computed(() => ({
+      Delivered: orders.value.filter(o => o.status === 'Delivered').length,
+      Shipped: orders.value.filter(o => o.status === 'Shipped').length,
+      Processing: orders.value.filter(o => o.status === 'Processing').length,
+      Backordered: orders.value.filter(o => o.status === 'Backordered').length
+    }))
 
     const getOrderStatusClass = (status) => {
       const statusMap = {
@@ -150,8 +151,10 @@ export default {
 
     const formatDate = (dateString) => {
       const { currentLocale } = useI18n()
+      const date = new Date(dateString)
+      if (isNaN(date.getTime())) return '-'
       const locale = currentLocale.value === 'ja' ? 'ja-JP' : 'en-US'
-      return new Date(dateString).toLocaleDateString(locale, {
+      return date.toLocaleDateString(locale, {
         year: 'numeric',
         month: 'short',
         day: 'numeric'
@@ -165,10 +168,11 @@ export default {
       loading,
       error,
       orders,
-      getOrdersByStatus,
+      currentCurrency,
+      orderCountsByStatus,
       getOrderStatusClass,
       formatDate,
-      currencySymbol,
+      formatCurrency,
       translateProductName,
       translateCustomerName
     }

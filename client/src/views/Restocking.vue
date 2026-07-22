@@ -19,7 +19,6 @@
               max="50000"
               step="100"
               class="budget-slider"
-              @input="onBudgetChange"
             />
             <div class="budget-display">
               <div class="budget-value">{{ formatCurrency(budget, selectedCurrency) }}</div>
@@ -105,7 +104,8 @@
 </template>
 
 <script>
-import { ref, onMounted, computed, watch } from 'vue'
+import { ref, onMounted, computed } from 'vue'
+import { watchDebounced } from '@vueuse/core'
 import { api } from '../api'
 import { useI18n } from '../composables/useI18n'
 import { formatCurrency } from '../utils/currency'
@@ -147,10 +147,6 @@ export default {
       }
     }
 
-    const onBudgetChange = () => {
-      fetchRecommendations()
-    }
-
     const submitOrder = async () => {
       if (recommendations.value.length === 0) {
         error.value = 'Please select items to order'
@@ -190,8 +186,8 @@ export default {
       fetchRecommendations()
     })
 
-    // Re-fetch recommendations when budget changes
-    watch(budget, () => {
+    // Re-fetch recommendations when budget changes with debounce to prevent request storms
+    watchDebounced(budget, () => {
       fetchRecommendations()
     }, { debounce: 300 })
 
@@ -206,7 +202,6 @@ export default {
       totalSelectedCost,
       remainingBudget,
       earliestDelivery,
-      onBudgetChange,
       submitOrder,
       t,
       selectedCurrency,
