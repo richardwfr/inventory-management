@@ -1,6 +1,7 @@
 """
 Tests for miscellaneous API endpoints (demand, backlog, spending).
 """
+
 import pytest
 
 
@@ -53,7 +54,9 @@ class TestDemandEndpoints:
         stable_items = [item for item in data if item["trend"].lower() == "stable"]
 
         # Should have at least 5 stable items
-        assert len(stable_items) >= 5, f"Expected at least 5 stable items, found {len(stable_items)}"
+        assert (
+            len(stable_items) >= 5
+        ), f"Expected at least 5 stable items, found {len(stable_items)}"
 
         for item in stable_items:
             current = item["current_demand"]
@@ -62,8 +65,9 @@ class TestDemandEndpoints:
             # Calculate percentage change
             if current > 0:
                 percent_change = abs((forecasted - current) / current) * 100
-                assert percent_change < 2.0, \
-                    f"Item {item['item_name']} has {percent_change:.2f}% change, expected < 2%"
+                assert (
+                    percent_change < 2.0
+                ), f"Item {item['item_name']} has {percent_change:.2f}% change, expected < 2%"
 
     def test_demand_forecast_has_new_items(self, client):
         """Test that new demand forecast items exist."""
@@ -80,8 +84,9 @@ class TestDemandEndpoints:
         # Verify they are marked as stable
         for item in data:
             if item["item_sku"] in ["SNR-420", "CTL-330"]:
-                assert item["trend"].lower() == "stable", \
-                    f"New item {item['item_name']} should have stable trend"
+                assert (
+                    item["trend"].lower() == "stable"
+                ), f"New item {item['item_name']} should have stable trend"
 
 
 class TestBacklogEndpoints:
@@ -183,13 +188,13 @@ class TestSpendingEndpoints:
 
         # Should have at least 3 different values (variety)
         unique_values = set(procurement_values)
-        assert len(unique_values) >= 3, \
-            "Monthly spending should have variety, not all the same values"
+        assert (
+            len(unique_values) >= 3
+        ), "Monthly spending should have variety, not all the same values"
 
         # Same for other categories
         operational_values = set(month["operational"] for month in data)
-        assert len(operational_values) >= 3, \
-            "Operational costs should have variety across months"
+        assert len(operational_values) >= 3, "Operational costs should have variety across months"
 
     def test_get_category_spending(self, client):
         """Test getting spending by category."""

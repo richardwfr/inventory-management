@@ -1,6 +1,7 @@
 """
 Tests for inventory API endpoints.
 """
+
 import pytest
 
 
@@ -106,9 +107,16 @@ class TestInventoryEndpoints:
         data = response.json()
 
         required_fields = [
-            "id", "sku", "name", "category", "warehouse",
-            "quantity_on_hand", "reorder_point", "unit_cost",
-            "location", "last_updated"
+            "id",
+            "sku",
+            "name",
+            "category",
+            "warehouse",
+            "quantity_on_hand",
+            "reorder_point",
+            "unit_cost",
+            "location",
+            "last_updated",
         ]
 
         for item in data:

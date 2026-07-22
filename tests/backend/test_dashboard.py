@@ -1,6 +1,7 @@
 """
 Tests for dashboard API endpoints.
 """
+
 import pytest
 
 
@@ -21,7 +22,7 @@ class TestDashboardEndpoints:
             "low_stock_items",
             "pending_orders",
             "total_backlog_items",
-            "total_orders_value"
+            "total_orders_value",
         ]
 
         for field in required_fields:
@@ -125,8 +126,7 @@ class TestDashboardEndpoints:
 
         # Count processing and backordered orders
         pending_count = sum(
-            1 for order in all_orders
-            if order["status"].lower() in ["processing", "backordered"]
+            1 for order in all_orders if order["status"].lower() in ["processing", "backordered"]
         )
 
         # Get dashboard summary
@@ -143,8 +143,7 @@ class TestDashboardEndpoints:
 
         # Count items at or below reorder point
         low_stock_count = sum(
-            1 for item in all_inventory
-            if item["quantity_on_hand"] <= item["reorder_point"]
+            1 for item in all_inventory if item["quantity_on_hand"] <= item["reorder_point"]
         )
 
         # Get dashboard summary
@@ -160,10 +159,7 @@ class TestDashboardEndpoints:
         all_inventory = inventory_response.json()
 
         # Calculate total value
-        expected_value = sum(
-            item["quantity_on_hand"] * item["unit_cost"]
-            for item in all_inventory
-        )
+        expected_value = sum(item["quantity_on_hand"] * item["unit_cost"] for item in all_inventory)
 
         # Get dashboard summary
         dashboard_response = client.get("/api/dashboard/summary")
