@@ -34,10 +34,17 @@ uv.lock
 
 # Test coverage
 .coverage
+coverage/
 htmlcov/
+.nyc_output/
 .pytest_cache/
 *.cover
 .hypothesis/
+coverage.xml
+
+# Vitest
+.vitest/
+vitest.config.*.backup
 
 
 # Build outputs
