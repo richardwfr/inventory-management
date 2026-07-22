@@ -6,6 +6,7 @@ export default {
     orders: 'Orders',
     finance: 'Finance',
     demandForecast: 'Demand Forecast',
+    restocking: 'Restocking',
     companyName: 'Catalyst Components',
     subtitle: 'Inventory Management System'
   },
@@ -312,8 +313,19 @@ export default {
   },
 
   // Common
+  // Restocking
+  restocking: {
+    title: 'Restocking',
+    budget: 'Set Your Restocking Budget',
+    recommendations: 'Recommended Items',
+    noRecommendations: 'No items available within your budget. Try increasing the budget.',
+    placeOrder: 'Place Order',
+    submitting: 'Submitting...'
+  },
+
   common: {
     loading: 'Loading...',
+    submitting: 'Submitting...',
     error: 'Error',
     noData: 'No data available',
     viewDetails: 'View Details',

@@ -6,6 +6,7 @@ export default {
     orders: '注文',
     finance: '財務',
     demandForecast: '需要予測',
+    restocking: '補充',
     companyName: '触媒コンポーネンツ',
     subtitle: '在庫管理システム'
   },
@@ -311,9 +312,20 @@ export default {
     selectLanguage: '言語を選択'
   },
 
+  // Restocking
+  restocking: {
+    title: '補充',
+    budget: '補充予算を設定',
+    recommendations: '推奨アイテム',
+    noRecommendations: '予算内で利用可能なアイテムがありません。予算を増やしてください。',
+    placeOrder: '注文を送信',
+    submitting: '送信中...'
+  },
+
   // Common
   common: {
     loading: '読み込み中...',
+    submitting: '送信中...',
     error: 'エラー',
     noData: 'データがありません',
     viewDetails: '詳細を見る',

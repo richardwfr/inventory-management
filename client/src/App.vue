@@ -1,41 +1,30 @@
 <template>
-  <div class="app">
-    <header class="top-nav">
-      <div class="nav-container">
-        <div class="logo">
-          <h1>{{ t('nav.companyName') }}</h1>
-          <span class="subtitle">{{ t('nav.subtitle') }}</span>
+  <div class="app-container" :class="{ 'sidebar-collapsed': sidebarCollapsed }">
+    <SidebarNav
+      :appName="t('nav.companyName')"
+      :navItems="navItems"
+      @toggle="handleSidebarToggle"
+    />
+
+    <main class="main-wrapper">
+      <!-- Top bar for filters and actions -->
+      <header class="top-bar">
+        <div class="top-bar-content">
+          <FilterBar />
+          <div class="header-actions">
+            <LanguageSwitcher />
+            <ProfileMenu
+              @show-profile-details="showProfileDetails = true"
+              @show-tasks="showTasks = true"
+            />
+          </div>
         </div>
-        <nav class="nav-tabs">
-          <router-link to="/" :class="{ active: $route.path === '/' }">
-            {{ t('nav.overview') }}
-          </router-link>
-          <router-link to="/inventory" :class="{ active: $route.path === '/inventory' }">
-            {{ t('nav.inventory') }}
-          </router-link>
-          <router-link to="/orders" :class="{ active: $route.path === '/orders' }">
-            {{ t('nav.orders') }}
-          </router-link>
-          <router-link to="/spending" :class="{ active: $route.path === '/spending' }">
-            {{ t('nav.finance') }}
-          </router-link>
-          <router-link to="/demand" :class="{ active: $route.path === '/demand' }">
-            {{ t('nav.demandForecast') }}
-          </router-link>
-          <router-link to="/reports" :class="{ active: $route.path === '/reports' }">
-            Reports
-          </router-link>
-        </nav>
-        <LanguageSwitcher />
-        <ProfileMenu
-          @show-profile-details="showProfileDetails = true"
-          @show-tasks="showTasks = true"
-        />
+      </header>
+
+      <!-- Main content area -->
+      <div class="content-area">
+        <router-view />
       </div>
-    </header>
-    <FilterBar />
-    <main class="main-content">
-      <router-view />
     </main>
 
     <ProfileDetailsModal
@@ -59,6 +48,7 @@ import { ref, onMounted, computed } from 'vue'
 import { api } from './api'
 import { useAuth } from './composables/useAuth'
 import { useI18n } from './composables/useI18n'
+import SidebarNav from './components/SidebarNav.vue'
 import FilterBar from './components/FilterBar.vue'
 import ProfileMenu from './components/ProfileMenu.vue'
 import ProfileDetailsModal from './components/ProfileDetailsModal.vue'
@@ -68,6 +58,7 @@ import LanguageSwitcher from './components/LanguageSwitcher.vue'
 export default {
   name: 'App',
   components: {
+    SidebarNav,
     FilterBar,
     ProfileMenu,
     ProfileDetailsModal,
@@ -80,11 +71,26 @@ export default {
     const showProfileDetails = ref(false)
     const showTasks = ref(false)
     const apiTasks = ref([])
+    const sidebarCollapsed = ref(false)
+
+    const navItems = [
+      { path: '/', label: t('nav.overview'), icon: '📊' },
+      { path: '/inventory', label: t('nav.inventory'), icon: '📦' },
+      { path: '/orders', label: t('nav.orders'), icon: '🛒' },
+      { path: '/spending', label: t('nav.finance'), icon: '💰' },
+      { path: '/demand', label: t('nav.demandForecast'), icon: '📈' },
+      { path: '/restocking', label: t('nav.restocking'), icon: '🔄' },
+      { path: '/reports', label: 'Reports', icon: '📋' }
+    ]
 
     // Merge mock tasks from currentUser with API tasks
     const tasks = computed(() => {
       return [...currentUser.value.tasks, ...apiTasks.value]
     })
+
+    const handleSidebarToggle = (collapsed) => {
+      sidebarCollapsed.value = collapsed
+    }
 
     const loadTasks = async () => {
       try {
@@ -97,7 +103,6 @@ export default {
     const addTask = async (taskData) => {
       try {
         const newTask = await api.createTask(taskData)
-        // Add new task to the beginning of the array
         apiTasks.value.unshift(newTask)
       } catch (err) {
         console.error('Failed to add task:', err)
@@ -106,17 +111,14 @@ export default {
 
     const deleteTask = async (taskId) => {
       try {
-        // Check if it's a mock task (from currentUser)
         const isMockTask = currentUser.value.tasks.some(t => t.id === taskId)
 
         if (isMockTask) {
-          // Remove from mock tasks
           const index = currentUser.value.tasks.findIndex(t => t.id === taskId)
           if (index !== -1) {
             currentUser.value.tasks.splice(index, 1)
           }
         } else {
-          // Remove from API tasks
           await api.deleteTask(taskId)
           apiTasks.value = apiTasks.value.filter(t => t.id !== taskId)
         }
@@ -127,14 +129,11 @@ export default {
 
     const toggleTask = async (taskId) => {
       try {
-        // Check if it's a mock task (from currentUser)
         const mockTask = currentUser.value.tasks.find(t => t.id === taskId)
 
         if (mockTask) {
-          // Toggle mock task status
           mockTask.status = mockTask.status === 'pending' ? 'completed' : 'pending'
         } else {
-          // Toggle API task
           const updatedTask = await api.toggleTask(taskId)
           const index = apiTasks.value.findIndex(t => t.id === taskId)
           if (index !== -1) {
@@ -150,6 +149,9 @@ export default {
 
     return {
       t,
+      navItems,
+      sidebarCollapsed,
+      handleSidebarToggle,
       showProfileDetails,
       showTasks,
       tasks,
@@ -162,168 +164,129 @@ export default {
 </script>
 
 <style>
+@import './styles/tokens.css';
+
 * {
   margin: 0;
   padding: 0;
   box-sizing: border-box;
 }
 
+html, body, #app {
+  height: 100%;
+  width: 100%;
+}
+
 body {
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-  background: #f8fafc;
-  color: #1e293b;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  background: var(--color-bg-primary);
+  color: var(--color-text-primary);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
-.app {
+.app-container {
+  display: flex;
+  height: 100vh;
+  width: 100%;
+  transition: margin-left 0.3s ease;
+  margin-left: var(--sidebar-width);
+}
+
+.app-container.sidebar-collapsed {
+  margin-left: var(--sidebar-width-collapsed);
+}
+
+.main-wrapper {
+  flex: 1;
   display: flex;
   flex-direction: column;
-  min-height: 100vh;
+  height: 100vh;
+  overflow: hidden;
 }
 
-.top-nav {
-  background: #ffffff;
-  border-bottom: 1px solid #e2e8f0;
-  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05);
-  position: sticky;
-  top: 0;
-  z-index: 100;
+.top-bar {
+  background: var(--color-bg-primary);
+  border-bottom: 1px solid var(--color-border-light);
+  padding: var(--spacing-md) var(--spacing-lg);
+  flex-shrink: 0;
 }
 
-.nav-container {
-  max-width: 1600px;
+.top-bar-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--spacing-lg);
+  max-width: 1400px;
   margin: 0 auto;
+  width: 100%;
+}
+
+.header-actions {
   display: flex;
   align-items: center;
-  padding: 0 2rem;
-  height: 70px;
+  gap: var(--spacing-md);
 }
 
-.nav-container > .nav-tabs {
-  margin-left: auto;
-  margin-right: 1rem;
-}
-
-.nav-container > .language-switcher {
-  margin-right: 1rem;
-}
-
-.logo {
-  display: flex;
-  align-items: baseline;
-  gap: 0.75rem;
-}
-
-.logo h1 {
-  font-size: 1.375rem;
-  font-weight: 700;
-  color: #0f172a;
-  letter-spacing: -0.025em;
-}
-
-.subtitle {
-  font-size: 0.813rem;
-  color: #64748b;
-  font-weight: 400;
-  padding-left: 0.75rem;
-  border-left: 1px solid #e2e8f0;
-}
-
-.nav-tabs {
-  display: flex;
-  gap: 0.25rem;
-}
-
-.nav-tabs a {
-  padding: 0.625rem 1.25rem;
-  color: #64748b;
-  text-decoration: none;
-  font-weight: 500;
-  font-size: 0.938rem;
-  border-radius: 6px;
-  transition: all 0.2s ease;
-  position: relative;
-}
-
-.nav-tabs a:hover {
-  color: #0f172a;
-  background: #f1f5f9;
-}
-
-.nav-tabs a.active {
-  color: #2563eb;
-  background: #eff6ff;
-}
-
-.nav-tabs a.active::after {
-  content: '';
-  position: absolute;
-  bottom: -1px;
-  left: 0;
-  right: 0;
-  height: 2px;
-  background: #2563eb;
-}
-
-.main-content {
+.content-area {
   flex: 1;
-  max-width: 1600px;
-  width: 100%;
-  margin: 0 auto;
-  padding: 1.5rem 2rem;
+  overflow-y: auto;
+  overflow-x: hidden;
+  background: var(--color-bg-primary);
 }
 
 .page-header {
-  margin-bottom: 1.5rem;
+  margin-bottom: var(--spacing-lg);
+  padding: var(--spacing-md) var(--spacing-lg);
 }
 
 .page-header h2 {
   font-size: 1.875rem;
   font-weight: 700;
-  color: #0f172a;
-  margin-bottom: 0.375rem;
+  color: var(--color-text-primary);
+  margin-bottom: var(--spacing-sm);
   letter-spacing: -0.025em;
 }
 
 .page-header p {
-  color: #64748b;
+  color: var(--color-text-secondary);
   font-size: 0.938rem;
 }
 
 .stats-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  gap: 1.25rem;
-  margin-bottom: 1.5rem;
+  gap: var(--spacing-lg);
+  margin: var(--spacing-lg);
+  margin-bottom: var(--spacing-lg);
 }
 
 .stat-card {
-  background: white;
-  padding: 1.25rem;
-  border-radius: 10px;
-  border: 1px solid #e2e8f0;
+  background: var(--color-bg-secondary);
+  padding: var(--spacing-lg);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-border-light);
   transition: all 0.2s ease;
 }
 
 .stat-card:hover {
-  border-color: #cbd5e1;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+  border-color: var(--color-border);
+  box-shadow: var(--shadow-md);
 }
 
 .stat-label {
-  color: #64748b;
+  color: var(--color-text-secondary);
   font-size: 0.875rem;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.5px;
-  margin-bottom: 0.625rem;
+  margin-bottom: var(--spacing-sm);
 }
 
 .stat-value {
   font-size: 2.25rem;
   font-weight: 700;
-  color: #0f172a;
+  color: var(--color-text-primary);
   letter-spacing: -0.025em;
 }
 
@@ -344,26 +307,27 @@ body {
 }
 
 .card {
-  background: white;
-  border-radius: 10px;
-  padding: 1.25rem;
-  border: 1px solid #e2e8f0;
-  margin-bottom: 1.25rem;
+  background: var(--color-bg-secondary);
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-lg);
+  border: 1px solid var(--color-border-light);
+  margin: var(--spacing-lg);
+  margin-bottom: var(--spacing-lg);
 }
 
 .card-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 1rem;
-  padding-bottom: 0.875rem;
-  border-bottom: 1px solid #e2e8f0;
+  margin-bottom: var(--spacing-md);
+  padding-bottom: var(--spacing-sm);
+  border-bottom: 1px solid var(--color-border-light);
 }
 
 .card-title {
   font-size: 1.125rem;
   font-weight: 700;
-  color: #0f172a;
+  color: var(--color-text-primary);
   letter-spacing: -0.025em;
 }
 
@@ -377,25 +341,25 @@ table {
 }
 
 thead {
-  background: #f8fafc;
-  border-top: 1px solid #e2e8f0;
-  border-bottom: 1px solid #e2e8f0;
+  background: var(--color-bg-tertiary);
+  border-top: 1px solid var(--color-border-light);
+  border-bottom: 1px solid var(--color-border-light);
 }
 
 th {
   text-align: left;
-  padding: 0.5rem 0.75rem;
+  padding: var(--spacing-sm) var(--spacing-md);
   font-weight: 600;
-  color: #475569;
+  color: var(--color-text-secondary);
   font-size: 0.75rem;
   text-transform: uppercase;
   letter-spacing: 0.05em;
 }
 
 td {
-  padding: 0.5rem 0.75rem;
-  border-top: 1px solid #f1f5f9;
-  color: #334155;
+  padding: var(--spacing-sm) var(--spacing-md);
+  border-top: 1px solid var(--color-border-light);
+  color: var(--color-text-secondary);
   font-size: 0.875rem;
 }
 
@@ -404,13 +368,13 @@ tbody tr {
 }
 
 tbody tr:hover {
-  background: #f8fafc;
+  background: var(--color-bg-tertiary);
 }
 
 .badge {
   display: inline-block;
-  padding: 0.313rem 0.75rem;
-  border-radius: 6px;
+  padding: var(--spacing-xs) var(--spacing-md);
+  border-radius: var(--radius-md);
   font-size: 0.75rem;
   font-weight: 600;
   text-transform: uppercase;
@@ -419,32 +383,37 @@ tbody tr:hover {
 
 .badge.success {
   background: #d1fae5;
-  color: #065f46;
+  color: var(--color-success);
 }
 
 .badge.warning {
   background: #fed7aa;
-  color: #92400e;
+  color: var(--color-warning);
 }
 
 .badge.danger {
   background: #fecaca;
-  color: #991b1b;
+  color: var(--color-danger);
 }
 
 .badge.info {
-  background: #dbeafe;
-  color: #1e40af;
+  background: var(--color-accent-light);
+  color: var(--color-accent-primary);
+}
+
+.badge.submitted {
+  background: var(--color-accent-light);
+  color: var(--color-accent-primary);
 }
 
 .badge.increasing {
   background: #d1fae5;
-  color: #065f46;
+  color: var(--color-success);
 }
 
 .badge.decreasing {
   background: #fecaca;
-  color: #991b1b;
+  color: var(--color-danger);
 }
 
 .badge.stable {
@@ -454,33 +423,62 @@ tbody tr:hover {
 
 .badge.high {
   background: #fecaca;
-  color: #991b1b;
+  color: var(--color-danger);
 }
 
 .badge.medium {
   background: #fed7aa;
-  color: #92400e;
+  color: var(--color-warning);
 }
 
 .badge.low {
-  background: #dbeafe;
-  color: #1e40af;
+  background: var(--color-accent-light);
+  color: var(--color-accent-primary);
 }
 
 .loading {
   text-align: center;
-  padding: 3rem;
-  color: #64748b;
+  padding: var(--spacing-2xl);
+  color: var(--color-text-tertiary);
   font-size: 0.938rem;
 }
 
 .error {
   background: #fef2f2;
   border: 1px solid #fecaca;
-  color: #991b1b;
-  padding: 1rem;
-  border-radius: 8px;
-  margin: 1rem 0;
+  color: var(--color-danger);
+  padding: var(--spacing-md);
+  border-radius: var(--radius-md);
+  margin: var(--spacing-md) 0;
   font-size: 0.938rem;
+}
+
+/* Mobile responsiveness */
+@media (max-width: 768px) {
+  .app-container,
+  .app-container.sidebar-collapsed {
+    margin-left: 0;
+    flex-direction: column;
+  }
+
+  .top-bar {
+    border-bottom: 1px solid var(--color-border-light);
+  }
+
+  .content-area {
+    flex: 1;
+  }
+
+  .stats-grid {
+    margin: var(--spacing-md);
+  }
+
+  .card {
+    margin: var(--spacing-md);
+  }
+
+  .page-header {
+    padding: var(--spacing-md);
+  }
 }
 </style>
